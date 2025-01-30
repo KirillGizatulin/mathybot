@@ -1,9 +1,10 @@
 import os
 from telebot import TeleBot, types
 
-from constants import HELP_MESSAGE_FOR_QUDRATIC_EDUATION
+from constants import HELP_MESSAGE_FOR_QUDRATIC_EDUATION, HELP_MESSAGE_FOR_DIFF
 from dotenv import load_dotenv
-from quadric_eduation import delitel, discriminant, converter, roots
+from mathy_logic import (delitel, discriminant, converter, roots,
+                         differentiation)
 
 load_dotenv()
 
@@ -14,16 +15,22 @@ def keyboard_menu():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("/start")
     btn2 = types.KeyboardButton("/quadratic_eduation")
-    return keyboard.add(btn1, btn2)
+    btn3 = types.KeyboardButton("/diff")
+    return keyboard.add(btn1, btn2, btn3)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
     try:
-        if call.message and call.data == 'help':
-            bot.send_message(
-                call.message.chat.id, HELP_MESSAGE_FOR_QUDRATIC_EDUATION
-            )
+        if call.message:
+            if call.data == 'help_quadric':
+                bot.send_message(
+                    call.message.chat.id, HELP_MESSAGE_FOR_QUDRATIC_EDUATION
+                )
+            elif call.data == 'help_diff':
+                bot.send_message(
+                    call.message.chat.id, HELP_MESSAGE_FOR_DIFF
+                )
     except Exception:
         bot.send_message(call.message.chat.id, 'Ошибка!')
 
@@ -39,7 +46,7 @@ def start_command(message):
 @bot.message_handler(commands=['quadratic_eduation'])
 def quadratic_eduation_command(message):
     markup = types.InlineKeyboardMarkup()
-    btn1 = types.InlineKeyboardButton('help', callback_data='help')
+    btn1 = types.InlineKeyboardButton('help', callback_data='help_quadric')
     markup.add(btn1)
     send_message = bot.send_message(
         message.chat.id,
@@ -80,8 +87,39 @@ def quadratic_eduation(message):
     except Exception as e:
         bot.send_message(
             chat_id,
-            (f'{e}\n'
-             f'{HELP_MESSAGE_FOR_QUDRATIC_EDUATION}')
+            f'{e}\n{HELP_MESSAGE_FOR_QUDRATIC_EDUATION}'
+        )
+
+
+@bot.message_handler(commands=['diff'])
+def diff_comand(message):
+    markup = types.InlineKeyboardMarkup()
+    btn1 = types.InlineKeyboardButton('help', callback_data='help_diff')
+    markup.add(btn1)
+    send_message = bot.send_message(
+        message.chat.id,
+        'Введите выражение:',
+        reply_markup=markup
+    )
+    bot.register_next_step_handler(send_message, diff_eduation)
+
+
+def diff_eduation(message):
+    eduation = message.text
+    message_text = ''
+
+    try:
+        message_text += f'Исходное выражение: {eduation}\n'
+
+        diff = differentiation(eduation)
+
+        message_text += f'{diff}'
+
+        bot.send_message(message.chat.id, message_text)
+    except Exception as e:
+        bot.send_message(
+            message.chat.id,
+            f'{e}\n{HELP_MESSAGE_FOR_DIFF}'
         )
 
 
